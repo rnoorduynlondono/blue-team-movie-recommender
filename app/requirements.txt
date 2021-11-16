@@ -1,0 +1,4 @@
+ibm_db
+streamlit
+pandas
+requests
