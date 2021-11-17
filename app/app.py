@@ -100,7 +100,7 @@ def get_ratings(user_id, _conn):
     return data
 
 
-st.title("Movie Recommendation Systems \n\n\n")
+st.title("Movie Recommender System \n\n\n")
 
 col1, col2, col3 = st.columns([1, 3, 1])
 with col1:
