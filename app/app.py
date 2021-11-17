@@ -147,8 +147,9 @@ favourite_genres = (
 
 ids = movie_df.loc[movie_df.TITLE.isin([movie1, movie2, movie3])].MOVIE_ID.to_list()
 
+# json with user information that we need to send with the request
 json = {
-    "user": {"gender": "M", "age": "Under 18",},
+    "user": {"user_id": 1, "age": "Under 18"},
     "movies": {"ids": ids},
 }
 

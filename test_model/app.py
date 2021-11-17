@@ -6,7 +6,7 @@ app = FastAPI()
 
 
 class User(BaseModel):
-    gender: str
+    user_id: int
     age: str
 
 
