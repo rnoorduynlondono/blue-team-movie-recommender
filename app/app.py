@@ -149,7 +149,7 @@ ids = movie_df.loc[movie_df.TITLE.isin([movie1, movie2, movie3])].MOVIE_ID.to_li
 
 # json with user information that we need to send with the request
 json = {
-    "user": {"user_id": 1, "age": "Under 18"},
+    "user": {"user_id": user, "age": age},
     "movies": {"ids": ids},
 }
 
