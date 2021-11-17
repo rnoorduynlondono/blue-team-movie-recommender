@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-MODEL_HOST = "model"
+MODEL_HOST = "model_marco"
 MODEL_PORT = "8000"
 
 DATABASE = "bludb"
@@ -44,7 +44,7 @@ def get_movies(_conn):
     data = (
         pd.read_sql_query(query, con=_conn)
         .pipe(lambda f: pd.concat([f, series_to_dummies(f.GENRES)], axis=1))
-        .drop(columns=["GENRES"])
+        .drop(columns=["GENRES"]).set_index('MOVIE_ID')
     )
 
     return data
@@ -99,6 +99,9 @@ def get_ratings(user_id, _conn):
     data = pd.read_sql_query(query, con=_conn)
     return data
 
+def get_movie_title(movies_dataframe, movie_id):
+    return movies_dataframe.loc[movie_id, 'TITLE']
+
 
 st.title("Movie Recommender System \n\n\n")
 
@@ -131,21 +134,7 @@ movie1 = st.selectbox("Movie #1", all_movies)
 movie2 = st.selectbox("Movie #2", all_movies)
 movie3 = st.selectbox("Movie #3", all_movies)
 
-user_ratings = (
-    get_ratings(user, conn)
-    .sort_values("RATING", ascending=False)
-    .merge(movie_df, on="MOVIE_ID")
-)
-
-favourite_genres = (
-    user_ratings.pipe(lambda f: f.loc[f.RATING >= 4])
-    .iloc[:, 4:]
-    .sum(axis=0)
-    .squeeze()
-    .sort_values(ascending=False)
-)
-
-ids = movie_df.loc[movie_df.TITLE.isin([movie1, movie2, movie3])].MOVIE_ID.to_list()
+ids = movie_df.loc[movie_df.TITLE.isin([movie1, movie2, movie3])].index.to_list()
 
 # json with user information that we need to send with the request
 json = {
@@ -162,14 +151,16 @@ if st.button("recommend"):
     st.write("")
     st.write("")
 
+
     r = requests.get(f"http://{MODEL_HOST}:{MODEL_PORT}/recommendation", json=json)
 
     recommendations = r.json()
 
     cols = st.columns(5)
 
-    for i, movie in enumerate(recommendations["recommendation"]):
+    for i, movie in enumerate(recommendations["recommendation"][:5]):
 
         with cols[i]:
             st.image(f"images/movies{i}.png", width=130)
-            st.subheader(movie["movie"])
+            st.subheader(get_movie_title(movie_df, movie["id"]))
+

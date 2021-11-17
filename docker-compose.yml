@@ -1,16 +1,24 @@
 services:
   model:
     build:       
-      dockerfile: Dockerfile.fastapi
-      context: ./
+      dockerfile: Dockerfile
+      context: ./test_model
     volumes: 
       - ./test_model:/app
     ports:
       - "8000:8000"
+  model_marco:
+    build:
+      dockerfile: Dockerfile
+      context: ./model_marco
+    volumes:
+      - ./model_marco:/app
+    ports:
+      - "8001:8000"
   streamlit:
     build: 
-      dockerfile: Dockerfile.streamlit
-      context: ./
+      dockerfile: Dockerfile
+      context: ./app
     volumes: 
       - ./app:/app
     ports:
