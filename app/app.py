@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import requests
 
-
 MODEL_HOST = "model"
 MODEL_PORT = "8000"
 
@@ -15,9 +14,6 @@ PORT = 31742
 UID = "ebd0118f"
 PWD = None
 CERT = "ssl.cert"
-
-st.title("HELLO!")
-st.caption("This is out recommendation system!")
 
 
 @st.experimental_singleton
@@ -31,14 +27,7 @@ def get_connection():
         "PWD={};"
         "SECURITY=SSL;"
         "SSLServerCertificate={}"
-    ).format(
-        DATABASE,
-        HOSTNAME,
-        PORT,
-        UID,
-        PWD,
-        CERT,
-    )
+    ).format(DATABASE, HOSTNAME, PORT, UID, PWD, CERT,)
 
     return ibm_db_dbi.Connection(ibm_db.connect(dsn, "", ""))
 
@@ -111,17 +100,36 @@ def get_ratings(user_id, _conn):
     return data
 
 
+st.title("Movie Recommender System \n\n\n")
+
+col1, col2, col3 = st.columns([1, 3, 1])
+with col1:
+    st.write("")
+
+with col2:
+    st.image("images/video-player.png", width=350)
+
+with col3:
+    st.write("")
+
+st.markdown(
+    "\n Please select three of your favourite movies, so that we can recommend your next favourite! \n\n"
+)
+
+
 conn = get_connection()
 movie_df = get_movies(conn)
 users_df = get_users(conn)
 
 all_users = users_df.USER_ID.to_list()
+all_age_groups = sorted(users_df.AGE_DESC.unique().tolist())
 all_movies = movie_df.TITLE.to_list()
 
-user = st.sidebar.selectbox("User", all_users)
-movie1 = st.sidebar.selectbox("Movie #1", all_movies)
-movie2 = st.sidebar.selectbox("Movie #2", all_movies)
-movie3 = st.sidebar.selectbox("Movie #3", all_movies)
+user = st.selectbox("User", all_users)
+age = st.selectbox("Age group", all_age_groups)
+movie1 = st.selectbox("Movie #1", all_movies)
+movie2 = st.selectbox("Movie #2", all_movies)
+movie3 = st.selectbox("Movie #3", all_movies)
 
 user_ratings = (
     get_ratings(user, conn)
@@ -139,15 +147,29 @@ favourite_genres = (
 
 ids = movie_df.loc[movie_df.TITLE.isin([movie1, movie2, movie3])].MOVIE_ID.to_list()
 
+# json with user information that we need to send with the request
 json = {
-    "user": {
-        "gender": "M",
-        "age": 18,
-    },
+    "user": {"user_id": user, "age": age},
     "movies": {"ids": ids},
 }
 
-r = requests.get(f"http://{MODEL_HOST}:{MODEL_PORT}/recommendation", json=json)
+st.text("")
 
-st.write(json)
-st.write(r.json())
+if st.button("recommend"):
+
+    st.subheader("You might like:")
+    st.write("")
+    st.write("")
+    st.write("")
+
+    r = requests.get(f"http://{MODEL_HOST}:{MODEL_PORT}/recommendation", json=json)
+
+    recommendations = r.json()
+
+    cols = st.columns(5)
+
+    for i, movie in enumerate(recommendations["recommendation"]):
+
+        with cols[i]:
+            st.image(f"images/movies{i}.png", width=130)
+            st.subheader(movie["movie"])

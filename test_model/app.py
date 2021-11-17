@@ -6,8 +6,8 @@ app = FastAPI()
 
 
 class User(BaseModel):
-    gender: str
-    age: int
+    user_id: int
+    age: str
 
 
 class Movies(BaseModel):
@@ -24,8 +24,10 @@ class Request(BaseModel):
 def read_item(q: Request):
     return {
         "recommendation": [
-            {"id": 0, "movie": "a"},
-            {"id": 1, "movie": "b"},
-            {"id": 2, "movie": "c"},
+            {"id": 0, "movie": "A walk to remember"},
+            {"id": 1, "movie": "Lion King"},
+            {"id": 2, "movie": "Forrest Gump"},
+            {"id": 3, "movie": "Toy Story"},
+            {"id": 4, "movie": "Titanic"},
         ]
     }
