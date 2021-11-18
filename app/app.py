@@ -96,18 +96,18 @@ def get_users(_conn):
     """
 
     data = pd.read_sql_query(query, con=_conn)
-    return data
+    return data.set_index("USER_ID")
 
 
 @st.experimental_memo
 def get_ratings(user_id, _conn):
     query = f"""
     SELECT
-        USER_ID,
-        MOVIE_ID,
+        MOVIEID as MOVIE_ID,
         RATING
-    FROM RAWDATA.RATINGS
-    WHERE USER_ID = {user_id}
+    FROM RAWDATA.RATINGS_FULL
+    WHERE USERID = {user_id}
+    ORDER BY RATING DESC
     """
     data = pd.read_sql_query(query, con=_conn)
     return data
@@ -129,26 +129,39 @@ with col2:
 with col3:
     st.write("")
 
-st.markdown(
-    "\n Please select three of your favourite movies, so that we can recommend your next favourite! \n\n"
-)
+
+existing_user = st.sidebar.radio("Are you an existing user?", ["yes", "no"])
 
 
 conn = get_connection()
 movie_df = get_movies(conn)
 users_df = get_users(conn)
 
-all_users = users_df.USER_ID.to_list()
+all_users = users_df.index.to_list()
 all_age_groups = sorted(users_df.AGE_DESC.unique().tolist())
 all_movies = movie_df.TITLE.to_list()
 
-user = st.selectbox("User", all_users)
-age = st.selectbox("Age group", all_age_groups)
-movie1 = st.selectbox("Movie #1", all_movies)
-movie2 = st.selectbox("Movie #2", all_movies)
-movie3 = st.selectbox("Movie #3", all_movies)
+is_existing_user = existing_user == "yes"
 
-ids = movie_df.loc[movie_df.TITLE.isin([movie1, movie2, movie3])].index.to_list()
+if not is_existing_user:
+    st.markdown(
+        "\n Please select three of your favourite movies, so that we can recommend your next favourite! \n\n"
+    )
+    user = -1
+    age = st.sidebar.selectbox("Age group", all_age_groups)
+    movies = [
+        st.sidebar.selectbox("Movie #1", all_movies),
+        st.sidebar.selectbox("Movie #2", all_movies),
+        st.sidebar.selectbox("Movie #3", all_movies),
+    ]
+    ids = movie_df.loc[movie_df.TITLE.isin(movies)].index.to_list()
+else:
+    user = st.sidebar.selectbox("User ID", all_users)
+    age = users_df.loc[user, "AGE_DESC"]
+    ids = get_ratings(user, conn).MOVIE_ID.tolist()[:3]
+    occ_desc = users_df.loc[user, "OCC_DESC"]
+
+    st.markdown(f"Get your popcorn ready, you **{occ_desc}**!")
 
 # json with user information that we need to send with the request
 json = {
