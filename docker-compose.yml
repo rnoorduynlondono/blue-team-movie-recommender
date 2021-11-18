@@ -7,6 +7,7 @@ services:
       - ./test_model:/app
     ports:
       - "8000:8000"
+
   model_marco:
     build:
       dockerfile: Dockerfile
@@ -23,3 +24,5 @@ services:
       - ./app:/app
     ports:
       - "8501:8501"
+    env_file: 
+      - .env

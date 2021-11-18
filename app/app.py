@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import ibm_db, ibm_db_dbi
 import itertools
@@ -5,15 +6,39 @@ import numpy as np
 import pandas as pd
 import requests
 
-MODEL_HOST = "model_marco"
-MODEL_PORT = "8000"
+CERTIFICATE = """-----BEGIN CERTIFICATE-----
+MIIDHTCCAgWgAwIBAgIUOwo0/okOBPCyF1VxRqThJEonl0UwDQYJKoZIhvcNAQEL
+BQAwHjEcMBoGA1UEAwwTSUJNIENsb3VkIERhdGFiYXNlczAeFw0yMDA4MDQwMjU3
+MjZaFw0zMDA4MDIwMjU3MjZaMB4xHDAaBgNVBAMME0lCTSBDbG91ZCBEYXRhYmFz
+ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDoFE4d4HgNyvLQR0Gx
+A0tjdWBs85PcL3rE+c7Tw+gbEGPILISEYWz8cX5LmWBM+cQg8oUy++Arw8J1iwQe
+rJiHSb5rQxY34spPxdETFdXHRrra0e6Vc81n6NYI/FGJyuCxkLnF1KEAoalv0h36
+xCOAoqtpNQkO3i14FyM2D4bj91rB8Di8W/W1ZUuXL4l3euKeEBy4nfhIWy2IW7iC
+ljLgte7xYL5GmZJ9GlakkJrurzMDAP/5TbteQB2tIhu0QITEdyDIQXPFFD0Gc9hd
+73oIvzUeBwT/nDsw92M4/6JGmejJ7IitPS7v6kgeQXH49AiEI5zPuEiW3Nb/FGJX
+f6kbAgMBAAGjUzBRMB0GA1UdDgQWBBTvG6vENLF1UmfgCM72lNrc3H26mDAfBgNV
+HSMEGDAWgBTvG6vENLF1UmfgCM72lNrc3H26mDAPBgNVHRMBAf8EBTADAQH/MA0G
+CSqGSIb3DQEBCwUAA4IBAQA8/tUgQ6ei6XXvgt2tuGknJokV9Qcdi3YlUEZCCS+c
+UPgsg2uA2WqpyVNmfFHcpvuVjtTtXNi65C6ZVlFv1szuqOstPynBxnSxqK4vG4u9
+V0VEH1pMmfvAJldWw8PBSdbmNMGtc8K9pOJ99WACVEEuWTgCxrJMqAfzXQybuEtw
+tqmiWk0NeW4i9dF8KgSYEZAahuuAJTeupvGdOWU4xExnm7hEQnfOWfHM8CwO15aY
+TFCk4CJCRdx2X9So8Wz5gs3rw2FACBRrgCXxQCfvke6TuSG6LEDrGnjViuRBJYun
+OTqYtNiPGhznLrk/AsjmK30qBaKNar5GPj8jjZModbgN
+-----END CERTIFICATE-----"""
 
-DATABASE = "bludb"
-HOSTNAME = "c768e784-fa28-48c0-8cd8-fe229292aa98.bs2io90l08kqb1od8lcg.databases.appdomain.cloud"
-PORT = 31742
-UID = "ebd0118f"
-PWD = None
-CERT = "ssl.cert"
+# This should be an env variable
+MODEL_HOST = os.getenv("MODEL_HOST")
+MODEL_PORT = os.getenv("MODEL_PORT")
+
+DATABASE = os.getenv("DB_NAME")
+HOSTNAME = os.getenv("DB_HOST")
+PORT = os.getenv("DB_PORT")
+UID = os.getenv("DB_UID")
+PWD = os.getenv("DB_PWD", "GseChTYMoo1yx8Uk")
+CERT = os.getenv("DB_CERT", CERTIFICATE)
+
+with open("ssl.cert", "w") as f:
+    f.write(CERT)
 
 
 @st.experimental_singleton
@@ -27,7 +52,14 @@ def get_connection():
         "PWD={};"
         "SECURITY=SSL;"
         "SSLServerCertificate={}"
-    ).format(DATABASE, HOSTNAME, PORT, UID, PWD, CERT,)
+    ).format(
+        DATABASE,
+        HOSTNAME,
+        PORT,
+        UID,
+        PWD,
+        "ssl.cert",
+    )
 
     return ibm_db_dbi.Connection(ibm_db.connect(dsn, "", ""))
 
@@ -44,7 +76,8 @@ def get_movies(_conn):
     data = (
         pd.read_sql_query(query, con=_conn)
         .pipe(lambda f: pd.concat([f, series_to_dummies(f.GENRES)], axis=1))
-        .drop(columns=["GENRES"]).set_index('MOVIE_ID')
+        .drop(columns=["GENRES"])
+        .set_index("MOVIE_ID")
     )
 
     return data
@@ -99,8 +132,9 @@ def get_ratings(user_id, _conn):
     data = pd.read_sql_query(query, con=_conn)
     return data
 
+
 def get_movie_title(movies_dataframe, movie_id):
-    return movies_dataframe.loc[movie_id, 'TITLE']
+    return movies_dataframe.loc[movie_id, "TITLE"]
 
 
 st.title("Movie Recommender System \n\n\n")
@@ -151,7 +185,6 @@ if st.button("recommend"):
     st.write("")
     st.write("")
 
-
     r = requests.get(f"http://{MODEL_HOST}:{MODEL_PORT}/recommendation", json=json)
 
     recommendations = r.json()
@@ -163,4 +196,3 @@ if st.button("recommend"):
         with cols[i]:
             st.image(f"images/movies{i}.png", width=130)
             st.subheader(get_movie_title(movie_df, movie["id"]))
-
