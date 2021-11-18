@@ -137,7 +137,7 @@ def get_movie_title(movies_dataframe, movie_id):
     return movies_dataframe.loc[movie_id, "TITLE"]
 
 
-st.title("Movie Recommender System \n\n\n")
+st.title("WatchNxt \n\n\n")
 
 col1, col2, col3 = st.columns([1, 3, 1])
 with col1:
