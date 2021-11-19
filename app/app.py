@@ -158,10 +158,11 @@ if not is_existing_user:
 else:
     user = st.sidebar.selectbox("User ID", all_users)
     age = users_df.loc[user, "AGE_DESC"]
+    age_number = users_df.loc[user, "AGE"]
     ids = get_ratings(user, conn).MOVIE_ID.tolist()[:3]
     occ_desc = users_df.loc[user, "OCC_DESC"]
 
-    st.markdown(f"Get your popcorn ready, you **{occ_desc}**!")
+    st.markdown(f"Get your popcorn ready, you {age_number} year old **{occ_desc}**!")
 
 # json with user information that we need to send with the request
 json = {
